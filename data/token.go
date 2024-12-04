@@ -1,8 +1,6 @@
 package data
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 	"github.com/wissance/Ferrum/utils/jsontools"
 )
@@ -12,8 +10,8 @@ type RawUserInfo interface{}
 
 // JwtCommonInfo - struct with all field for representing token in JWT format
 type JwtCommonInfo struct {
-	IssuedAt     time.Time `json:"iat"`
-	ExpiredAt    time.Time `json:"exp"`
+	IssuedAt     int64     `json:"iat"`
+	ExpiredAt    int64     `json:"exp"`
 	JwtId        uuid.UUID `json:"jti"`
 	Type         string    `json:"typ"`
 	Issuer       string    `json:"iss"`

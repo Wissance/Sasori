@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/wissance/Ferrum/config"
 	"github.com/wissance/Ferrum/data"
@@ -108,6 +109,7 @@ func testRunCommonTestCycleImpl(t *testing.T, appConfig *config.AppConfig, baseU
 	// 2. Introspect valid token
 	// todo(UMV): add Introspect result check
 	tokenIntResult := checkIntrospectToken(t, baseUrl, realm, token.AccessToken, testClient1, testClient1Secret, "200 OK")
+	compareTokenClaimsAndIntrospect(t, token.AccessToken, tokenIntResult)
 	active, ok := tokenIntResult["active"]
 	assert.True(t, ok)
 	assert.True(t, active.(bool))
@@ -245,4 +247,20 @@ func checkIntrospectToken(t *testing.T, baseUrl string, realm string, token stri
 	err = json.Unmarshal(responseBody, &result)
 	assert.Nil(t, err)
 	return result
+}
+
+func compareTokenClaimsAndIntrospect(t *testing.T, accessToken string, introspectResult map[string]interface{}) {
+	t.Helper()
+
+	mapClaims := &jwt.MapClaims{}
+	parser := jwt.NewParser()
+	_, _, err := parser.ParseUnverified(accessToken, mapClaims)
+	assert.NoError(t, err)
+	tokenExp, ok := (map[string]interface{})(*mapClaims)["exp"]
+	assert.True(t, ok)
+
+	introspectExp, ok := introspectResult["exp"]
+	assert.True(t, ok)
+
+	assert.EqualValues(t, tokenExp, introspectExp)
 }

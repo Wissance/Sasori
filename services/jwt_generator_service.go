@@ -30,7 +30,8 @@ type JwtGenerator struct {
  * Returns: JWT-encoded string with access token
  */
 func (generator *JwtGenerator) GenerateJwtAccessToken(realmBaseUrl string, tokenType string, scope string, sessionData *data.UserSession,
-	userData data.User) string {
+	userData data.User,
+) string {
 	accessToken := generator.prepareAccessToken(realmBaseUrl, tokenType, scope, sessionData, userData)
 	return generator.generateJwtAccessToken(accessToken)
 }
@@ -55,9 +56,9 @@ func (generator *JwtGenerator) generateJwtAccessToken(tokenData *data.AccessToke
 	token := jwt.New(jwt.SigningMethodHS256)
 	// signed token contains embedded type because we don't actually know type of User, therefore we do it like jwt do but use RawStr
 	signedToken, err := generator.makeSignedToken(token, tokenData, generator.SignKey)
-	//token.SignedString([]byte("secureSecretText"))
+	// token.SignedString([]byte("secureSecretText"))
 	if err != nil {
-		//todo(UMV): think what to do on Error
+		// todo(UMV): think what to do on Error
 		generator.Logger.Error(stringFormatter.Format("An error occurred during signed Jwt Access Token Generation: {0}", err.Error()))
 	}
 
@@ -69,7 +70,7 @@ func (generator *JwtGenerator) generateJwtRefreshToken(tokenData *data.TokenRefr
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, tokenData)
 	signedToken, err := token.SignedString(generator.SignKey)
 	if err != nil {
-		//todo(UMV): think what to do on Error
+		// todo(UMV): think what to do on Error
 		generator.Logger.Error(stringFormatter.Format("An error occurred during signed Jwt Refresh Token Generation: {0}", err.Error()))
 	}
 	return signedToken
@@ -77,11 +78,14 @@ func (generator *JwtGenerator) generateJwtRefreshToken(tokenData *data.TokenRefr
 
 // prepareAccessToken builds data.AccessTokenData from a lot of params
 func (generator *JwtGenerator) prepareAccessToken(realmBaseUrl string, tokenType string, scope string, sessionData *data.UserSession,
-	userData data.User) *data.AccessTokenData {
+	userData data.User,
+) *data.AccessTokenData {
 	issuer := realmBaseUrl
-	jwtCommon := data.JwtCommonInfo{Issuer: issuer, Type: tokenType, Audience: "account", Scope: scope, JwtId: uuid.New(),
-		IssuedAt: sessionData.Started, ExpiredAt: sessionData.Expired, Subject: sessionData.UserId,
-		SessionId: sessionData.Id, SessionState: sessionData.Id}
+	jwtCommon := data.JwtCommonInfo{
+		Issuer: issuer, Type: tokenType, Audience: "account", Scope: scope, JwtId: uuid.New(),
+		IssuedAt: sessionData.Started.Unix(), ExpiredAt: sessionData.Expired.Unix(), Subject: sessionData.UserId,
+		SessionId: sessionData.Id, SessionState: sessionData.Id,
+	}
 	accessToken := data.CreateAccessToken(&jwtCommon, userData)
 	return accessToken
 }
@@ -89,9 +93,11 @@ func (generator *JwtGenerator) prepareAccessToken(realmBaseUrl string, tokenType
 // prepareRefreshToken builds data.TokenRefreshData from a lot of params
 func (generator *JwtGenerator) prepareRefreshToken(realmBaseUrl string, tokenType string, scope string, sessionData *data.UserSession) *data.TokenRefreshData {
 	issuer := realmBaseUrl
-	jwtCommon := data.JwtCommonInfo{Issuer: issuer, Type: tokenType, Audience: issuer, Scope: scope, JwtId: uuid.New(),
-		IssuedAt: sessionData.Started, ExpiredAt: sessionData.Expired, Subject: sessionData.UserId,
-		SessionId: sessionData.Id, SessionState: sessionData.Id}
+	jwtCommon := data.JwtCommonInfo{
+		Issuer: issuer, Type: tokenType, Audience: issuer, Scope: scope, JwtId: uuid.New(),
+		IssuedAt: sessionData.Started.Unix(), ExpiredAt: sessionData.Expired.Unix(), Subject: sessionData.UserId,
+		SessionId: sessionData.Id, SessionState: sessionData.Id,
+	}
 	accessToken := data.CreateRefreshToken(&jwtCommon)
 	return accessToken
 }
