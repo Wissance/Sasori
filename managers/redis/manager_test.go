@@ -12,6 +12,7 @@ import (
 	"github.com/wissance/Ferrum/data"
 	appErrs "github.com/wissance/Ferrum/errors"
 	"github.com/wissance/Ferrum/logging"
+	"github.com/wissance/Ferrum/utils/encoding"
 	sf "github.com/wissance/stringFormatter"
 )
 
@@ -76,7 +77,7 @@ func TestCreateRealmSuccessfully(t *testing.T) {
 			expectedUsers := make([]data.User, len(realm.Users))
 			if len(realm.Users) > 0 {
 				for i := range realm.Users {
-					expectedUsers[i] = data.CreateUser(realm.Users[i])
+					expectedUsers[i] = data.CreateUser(realm.Users[i], realm.Encoder)
 				}
 			}
 			checkUsers(t, &expectedUsers, &users)
@@ -461,12 +462,15 @@ func TestGetClientFailsNonExistingClient(t *testing.T) {
 func TestGetUsersSuccessfully(t *testing.T) {
 	// 1. Create Realm
 	manager := createTestRedisDataManager(t)
-	realm := data.Realm{
+	r := data.Realm{
 		Name:                   sf.Format("realm_4_get_multiple_users_{0}", uuid.New().String()),
 		TokenExpiration:        3600,
 		RefreshTokenExpiration: 1800,
+		Encoder:                encoding.NewPasswordJsonEncoder("salt"),
 	}
-	err := manager.CreateRealm(realm)
+	err := manager.CreateRealm(r)
+	assert.NoError(t, err)
+	realm, err := manager.GetRealm(r.Name)
 	assert.NoError(t, err)
 	// 2. Create multiple users
 	users := make([]data.User, 3)
@@ -478,9 +482,9 @@ func TestGetUsersSuccessfully(t *testing.T) {
 		var rawUser interface{}
 		err = json.Unmarshal([]byte(jsonStr), &rawUser)
 		assert.NoError(t, err)
-		user := data.CreateUser(rawUser)
-		users[i] = user
+		user := data.CreateUser(rawUser, r.Encoder)
 		err = manager.CreateUser(realm.Name, user)
+		users[i] = user
 		assert.NoError(t, err)
 	}
 	// 3. Get all related to realm users
@@ -528,6 +532,7 @@ func TestGetUserByIdSuccessfully(t *testing.T) {
 		Name:                   "realm_4_test_get_user_by_id",
 		TokenExpiration:        3600,
 		RefreshTokenExpiration: 1800,
+		Encoder:                encoding.NewPasswordJsonEncoder("salt"),
 	}
 	err := manager.CreateRealm(realm)
 	assert.NoError(t, err)
@@ -538,7 +543,7 @@ func TestGetUserByIdSuccessfully(t *testing.T) {
 	var rawUser interface{}
 	err = json.Unmarshal([]byte(jsonStr), &rawUser)
 	assert.NoError(t, err)
-	user := data.CreateUser(rawUser)
+	user := data.CreateUser(rawUser, realm.Encoder)
 	err = manager.CreateUser(realm.Name, user)
 	assert.NoError(t, err)
 
@@ -601,7 +606,7 @@ func TestCreateUserSuccessfully(t *testing.T) {
 			var rawUser interface{}
 			err = json.Unmarshal([]byte(jsonStr), &rawUser)
 			assert.NoError(t, err)
-			user := data.CreateUser(rawUser)
+			user := data.CreateUser(rawUser, r.Encoder)
 			err = manager.CreateUser(realm.Name, user)
 			assert.NoError(t, err)
 			storedUser, err := manager.GetUser(realm.Name, tCase.userName)
@@ -620,6 +625,7 @@ func TestCreateUserFailsDuplicateUser(t *testing.T) {
 		Name:                   "realm_4_test_user_create_fails_duplicate",
 		TokenExpiration:        3600,
 		RefreshTokenExpiration: 1800,
+		Encoder:                encoding.NewPasswordJsonEncoder("salt"),
 	}
 	err := manager.CreateRealm(realm)
 	assert.NoError(t, err)
@@ -629,7 +635,7 @@ func TestCreateUserFailsDuplicateUser(t *testing.T) {
 	var rawUser interface{}
 	err = json.Unmarshal([]byte(jsonStr), &rawUser)
 	assert.NoError(t, err)
-	user := data.CreateUser(rawUser)
+	user := data.CreateUser(rawUser, realm.Encoder)
 	err = manager.CreateUser(realm.Name, user)
 	assert.NoError(t, err)
 
@@ -648,6 +654,7 @@ func TestUpdateUserSuccessfully(t *testing.T) {
 		Name:                   "realm_4_test_user_update",
 		TokenExpiration:        3600,
 		RefreshTokenExpiration: 1800,
+		Encoder:                encoding.NewPasswordJsonEncoder("salt"),
 	}
 	err := manager.CreateRealm(realm)
 	assert.NoError(t, err)
@@ -658,7 +665,7 @@ func TestUpdateUserSuccessfully(t *testing.T) {
 	var rawUser interface{}
 	err = json.Unmarshal([]byte(jsonStr), &rawUser)
 	assert.NoError(t, err)
-	user := data.CreateUser(rawUser)
+	user := data.CreateUser(rawUser, realm.Encoder)
 	err = manager.CreateUser(realm.Name, user)
 	assert.NoError(t, err)
 
@@ -666,7 +673,7 @@ func TestUpdateUserSuccessfully(t *testing.T) {
 	jsonStr = sf.Format(jsonTemplate, "pppetrov", "67890", "00000000-0000-0000-0000-000000000001")
 	err = json.Unmarshal([]byte(jsonStr), &rawUser)
 	assert.NoError(t, err)
-	user = data.CreateUser(rawUser)
+	user = data.CreateUser(rawUser, realm.Encoder)
 
 	err = manager.UpdateUser(realm.Name, userName, user)
 	assert.NoError(t, err)
@@ -685,6 +692,7 @@ func TestUpdateUserFailsNonExistingUser(t *testing.T) {
 		Name:                   "realm_4_test_user_update_fails_non_existing_user",
 		TokenExpiration:        3600,
 		RefreshTokenExpiration: 1800,
+		Encoder:                encoding.NewPasswordJsonEncoder("salt"),
 	}
 	err := manager.CreateRealm(realm)
 	assert.NoError(t, err)
@@ -695,7 +703,7 @@ func TestUpdateUserFailsNonExistingUser(t *testing.T) {
 	var rawUser interface{}
 	err = json.Unmarshal([]byte(jsonStr), &rawUser)
 	assert.NoError(t, err)
-	user := data.CreateUser(rawUser)
+	user := data.CreateUser(rawUser, realm.Encoder)
 	err = manager.UpdateUser(realm.Name, userName, user)
 	assert.Error(t, err)
 	assert.True(t, errors.As(err, &appErrs.EmptyNotFoundErr))
@@ -711,6 +719,7 @@ func TestDeleteUserSuccessfully(t *testing.T) {
 		Name:                   "realm_4_test_user_delete",
 		TokenExpiration:        3600,
 		RefreshTokenExpiration: 1800,
+		Encoder:                encoding.NewPasswordJsonEncoder("salt"),
 	}
 	err := manager.CreateRealm(realm)
 	assert.NoError(t, err)
@@ -721,7 +730,7 @@ func TestDeleteUserSuccessfully(t *testing.T) {
 	var rawUser interface{}
 	err = json.Unmarshal([]byte(jsonStr), &rawUser)
 	assert.NoError(t, err)
-	user := data.CreateUser(rawUser)
+	user := data.CreateUser(rawUser, realm.Encoder)
 	err = manager.CreateUser(realm.Name, user)
 	assert.NoError(t, err)
 	u, err := manager.GetUser(realm.Name, userName)
@@ -777,7 +786,7 @@ func TestGetUserFailsNonExistingUser(t *testing.T) {
 func TestChangeUserPasswordSuccessfully(t *testing.T) {
 	manager := createTestRedisDataManager(t)
 	// 1. Create Realm+Client+User
-	realm := data.Realm{
+	realm := &data.Realm{
 		Name:                   sf.Format("app_4_user_pwd_change_check_{0}", uuid.New().String()),
 		TokenExpiration:        3600,
 		RefreshTokenExpiration: 1800,
@@ -792,19 +801,21 @@ func TestChangeUserPasswordSuccessfully(t *testing.T) {
 			Value: uuid.New().String(),
 		},
 	}
-	realm.Clients = append([]data.Client{client})
+	realm.Clients = append(realm.Clients, client)
+	err := manager.CreateRealm(*realm)
+	assert.NoError(t, err)
+
+	realm, err = manager.GetRealm(realm.Name)
+	assert.NoError(t, err)
 
 	userName := "new_app_user"
 	userTemplate := `{"info":{"preferred_username":"{0}"}, "credentials":{"password": "{1}"}}`
 	userJson := sf.Format(userTemplate, userName, "123")
 	var rawUser interface{}
-	err := json.Unmarshal([]byte(userJson), &rawUser)
+	err = json.Unmarshal([]byte(userJson), &rawUser)
 	assert.NoError(t, err)
-	realm.Users = append([]interface{}{rawUser})
-
-	err = manager.CreateRealm(realm)
-	assert.NoError(t, err)
-	_, err = manager.GetRealm(realm.Name)
+	user := data.CreateUser(rawUser, realm.Encoder)
+	err = manager.CreateUser(realm.Name, user)
 	assert.NoError(t, err)
 
 	// 2. Reset Password and check ...
@@ -812,10 +823,12 @@ func TestChangeUserPasswordSuccessfully(t *testing.T) {
 	err = manager.SetPassword(realm.Name, userName, newPassword)
 	assert.NoError(t, err)
 
+	var rawUser2 interface{}
 	userJson = sf.Format(userTemplate, userName, newPassword)
-	err = json.Unmarshal([]byte(userJson), &rawUser)
+	err = json.Unmarshal([]byte(userJson), &rawUser2)
 	assert.NoError(t, err)
-	expectedUser := data.CreateUser(rawUser)
+	expectedUser := data.CreateUser(rawUser2, realm.Encoder)
+	assert.NoError(t, err)
 	u, err := manager.GetUser(realm.Name, userName)
 	assert.NoError(t, err)
 	checkUser(t, &expectedUser, &u)
@@ -1057,7 +1070,7 @@ func checkUsers(t *testing.T, expected *[]data.User, actual *[]data.User) {
 func checkUser(t *testing.T, expected *data.User, actual *data.User) {
 	assert.Equal(t, (*expected).GetId(), (*actual).GetId())
 	assert.Equal(t, (*expected).GetUsername(), (*actual).GetUsername())
-	assert.Equal(t, (*expected).GetPassword(), (*actual).GetPassword())
+	assert.Equal(t, (*expected).GetPasswordHash(), (*actual).GetPasswordHash())
 }
 
 func checkUserFederationConfigs(t *testing.T, expected *[]data.UserFederationServiceConfig, actual *[]data.UserFederationServiceConfig) {

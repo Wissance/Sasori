@@ -49,7 +49,8 @@
                         "password": "qwerty_user"
                     }
                 }
-            ]
+            ],
+            "password_salt": "super_strong_salt"
         }
     ]
 }

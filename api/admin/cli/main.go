@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/wissance/Ferrum/managers"
 	"log"
+
+	"github.com/wissance/Ferrum/managers"
 
 	"github.com/wissance/Ferrum/api/admin/cli/operations"
 	"github.com/wissance/Ferrum/config"
@@ -19,12 +20,12 @@ import (
 const defaultConfig = "./config_w_redis.json"
 
 var (
-	argConfigFile = flag.String("config", defaultConfig, "")
-	argOperation  = flag.String("operation", "", "")
-	argResource   = flag.String("resource", "", "")
-	argResourceId = flag.String("resource_id", "", "")
-	argParams     = flag.String("params", "", "This is the name of the realm for operations on client or user resources")
-	argValue      = flag.String("value", "", "Json object")
+	argConfigFile = flag.String("config", defaultConfig, "Application config for working with a persistent data store")
+	argOperation  = flag.String("operation", "", "One of the available operations read|create|update|delete or user specific change/reset password")
+	argResource   = flag.String("resource", "", "\"realm\", \"client\" or \"user\" or maybe other in future")
+	argResourceId = flag.String("resource_id", "", "resource object identifier, id required for the update|delete or read operation")
+	argParams     = flag.String("params", "", "Name of a realm for operations on client or user resources")
+	argValue      = flag.String("value", "", "Json encoded resource itself")
 )
 
 func main() {
@@ -121,7 +122,11 @@ func main() {
 			if err := json.Unmarshal(value, &userNew); err != nil {
 				log.Fatalf("json.Unmarshal failed: %s", err)
 			}
-			user := data.CreateUser(userNew)
+			realm, err := manager.GetRealm(params)
+			if err != nil {
+				log.Fatalf("GetRealm failed: %s", err)
+			}
+			user := data.CreateUser(userNew, realm.Encoder)
 			if err := manager.CreateUser(params, user); err != nil {
 				log.Fatalf("CreateUser failed: %s", err)
 			}
@@ -202,7 +207,11 @@ func main() {
 			if err := json.Unmarshal(value, &newUser); err != nil {
 				log.Fatalf("json.Unmarshal failed: %s", err)
 			}
-			user := data.CreateUser(newUser)
+			realm, err := manager.GetRealm(params)
+			if err != nil {
+				log.Fatalf("GetRealm failed: %s", err)
+			}
+			user := data.CreateUser(newUser, realm.Encoder)
 			if err := manager.UpdateUser(params, resourceId, user); err != nil {
 				log.Fatalf("UpdateUser failed: %s", err)
 			}

@@ -2,13 +2,14 @@ package files
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/wissance/Ferrum/config"
 	"github.com/wissance/Ferrum/data"
 	"github.com/wissance/Ferrum/logging"
-	"testing"
 )
 
 const testDataFile = "test_data.json"
@@ -67,7 +68,9 @@ func TestGetUserSuccessfully(t *testing.T) {
 	var rawUser interface{}
 	err := json.Unmarshal([]byte(userJson), &rawUser)
 	assert.NoError(t, err)
-	expectedUser := data.CreateUser(rawUser)
+	r, err := manager.GetRealm(realm)
+	assert.NoError(t, err)
+	expectedUser := data.CreateUser(rawUser, r.Encoder)
 	user, err := manager.GetUser(realm, userName)
 	assert.NoError(t, err)
 	checkUser(t, &expectedUser, &user)
@@ -96,7 +99,9 @@ func TestGetUserByIdSuccessfully(t *testing.T) {
 	var rawUser interface{}
 	err := json.Unmarshal([]byte(userJson), &rawUser)
 	assert.NoError(t, err)
-	expectedUser := data.CreateUser(rawUser)
+	r, err := manager.GetRealm(realm)
+	assert.NoError(t, err)
+	expectedUser := data.CreateUser(rawUser, r.Encoder)
 	user, err := manager.GetUserById(realm, userId)
 	assert.NoError(t, err)
 	checkUser(t, &expectedUser, &user)
@@ -160,5 +165,5 @@ func checkUsers(t *testing.T, expected *[]data.User, actual *[]data.User) {
 func checkUser(t *testing.T, expected *data.User, actual *data.User) {
 	assert.Equal(t, (*expected).GetId(), (*actual).GetId())
 	assert.Equal(t, (*expected).GetUsername(), (*actual).GetUsername())
-	assert.Equal(t, (*expected).GetPassword(), (*actual).GetPassword())
+	assert.Equal(t, (*expected).GetPasswordHash(), (*actual).GetPasswordHash())
 }

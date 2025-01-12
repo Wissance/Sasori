@@ -14,6 +14,7 @@ import (
 	"github.com/wissance/Ferrum/config"
 	"github.com/wissance/Ferrum/data"
 	"github.com/wissance/Ferrum/dto"
+	"github.com/wissance/Ferrum/utils/encoding"
 	sf "github.com/wissance/stringFormatter"
 
 	"github.com/stretchr/testify/assert"
@@ -29,8 +30,11 @@ const (
 )
 
 var (
-	testKey        = []byte("qwerty1234567890")
-	testServerData = data.ServerData{
+	testSalt           = "salt"
+	encoder            = encoding.NewPasswordJsonEncoder(testSalt)
+	testHashedPassowrd = encoder.GetB64PasswordHash("1234567890")
+	testKey            = []byte("qwerty1234567890")
+	testServerData     = data.ServerData{
 		Realms: []data.Realm{
 			{
 				Name: testRealm1, TokenExpiration: testAccessTokenExpiration, RefreshTokenExpiration: testRefreshTokenExpiration,
@@ -39,16 +43,18 @@ var (
 						Type:  data.ClientIdAndSecrets,
 						Value: testClient1Secret,
 					}},
-				}, Users: []interface{}{
+				},
+				Users: []interface{}{
 					map[string]interface{}{
 						"info": map[string]interface{}{
 							"sub":  "667ff6a7-3f6b-449b-a217-6fc5d9ac0723",
 							"name": "vano", "preferred_username": "vano",
 							"given_name": "vano ivanov", "family_name": "ivanov", "email_verified": true,
 						},
-						"credentials": map[string]interface{}{"password": "1234567890"},
+						"credentials": map[string]interface{}{"password": testHashedPassowrd},
 					},
 				},
+				PasswordSalt: testSalt,
 			},
 		},
 	}
