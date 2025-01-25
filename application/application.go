@@ -128,9 +128,11 @@ func (app *Application) Init() (bool, error) {
 			return false, errors.New("secret key is nil")
 		}
 		app.secretKey = key
+		app.shutdownTimeout = cfg.ServerCfg.ShutdownTimeout * time.Second
 	} else {
 		// init logger
 		app.logger = logging.CreateLogger(&app.appConfig.Logging)
+		app.shutdownTimeout = 30 * time.Second
 		app.logger.Init()
 	}
 	// common part: both configs and direct struct pass
@@ -152,7 +154,6 @@ func (app *Application) Init() (bool, error) {
 	}
 
 	app.httpServer = &http.Server{Handler: *app.httpHandler}
-	app.shutdownTimeout = 5 * time.Second
 	return true, nil
 }
 

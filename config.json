@@ -3,7 +3,8 @@
         "schema": "http",
         "address": "localhost",
         "port": 8182,
-        "secret_file": "./keyfile"
+        "secret_file": "./keyfile",
+        "shutdown_timeout": 30
     },
     "logging": {
         "level": "debug",
