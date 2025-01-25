@@ -1,6 +1,6 @@
 module github.com/wissance/Ferrum
 
-go 1.19
+go 1.21
 
 require (
 	github.com/go-ldap/ldap/v3 v3.4.8
@@ -44,7 +44,7 @@ require (
 	golang.org/x/crypto v0.27.0 // indirect
 	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
-	golang.org/x/tools v0.25.0 // indirect
+	golang.org/x/tools v0.24.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

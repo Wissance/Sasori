@@ -19,8 +19,8 @@ type objectType string
 
 const (
 	Realm  objectType = "realm"
-	Client            = "client"
-	User              = "user"
+	Client objectType = "client"
+	User   objectType = "user"
 )
 
 // FileDataManager is the simplest Data Storage without any dependencies, it uses single JSON file (it is users and clients RO auth server)
@@ -110,7 +110,7 @@ func (mn *FileDataManager) GetUsers(realmName string) ([]data.User, error) {
 			return users, nil
 		}
 	}
-	return nil, errors.NewObjectNotFoundError(User, "", sf.Format("get realm: {0} users", realmName))
+	return nil, errors.NewObjectNotFoundError(string(User), "", sf.Format("get realm: {0} users", realmName))
 }
 
 // GetClient function for getting Realm Client by name
@@ -135,7 +135,7 @@ func (mn *FileDataManager) GetClient(realmName string, clientName string) (*data
 			return &c, nil
 		}
 	}
-	return nil, errors.NewObjectNotFoundError(Client, clientName, sf.Format("realm: {0}", realmName))
+	return nil, errors.NewObjectNotFoundError(string(Client), clientName, sf.Format("realm: {0}", realmName))
 }
 
 // GetUser function for getting Realm User by userName
@@ -159,7 +159,7 @@ func (mn *FileDataManager) GetUser(realmName string, userName string) (data.User
 			return u, nil
 		}
 	}
-	return nil, errors.NewObjectNotFoundError(User, userName, sf.Format("realm: {0}", realmName))
+	return nil, errors.NewObjectNotFoundError(string(User), userName, sf.Format("realm: {0}", realmName))
 }
 
 // GetUserById function for getting Realm User by UserId (uuid)
@@ -179,7 +179,7 @@ func (mn *FileDataManager) GetUserById(realmName string, userId uuid.UUID) (data
 			return u, nil
 		}
 	}
-	return nil, errors.NewObjectNotFoundError(User, userId.String(), sf.Format("realm: {0}", realmName))
+	return nil, errors.NewObjectNotFoundError(string(User), userId.String(), sf.Format("realm: {0}", realmName))
 }
 
 // CreateRealm creates new data.Realm in a data store, receive realmData unmarshalled json in a data.Realm

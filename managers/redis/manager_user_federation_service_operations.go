@@ -3,6 +3,7 @@ package redis
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/wissance/Ferrum/config"
 	"github.com/wissance/Ferrum/data"
 	appErrs "github.com/wissance/Ferrum/errors"
@@ -69,7 +70,7 @@ func (mn *RedisDataManager) CreateUserFederationConfig(realmName string, userFed
 	// TODO(UMV): use function isExists
 	cfg, err := mn.GetUserFederationConfig(realmName, userFederationConfig.Name)
 	if cfg != nil {
-		return appErrs.NewObjectExistsError(RealmUserFederationConfig, userFederationConfig.Name, sf.Format("realm: {0}", realmName))
+		return appErrs.NewObjectExistsError(string(RealmUserFederationConfig), userFederationConfig.Name, sf.Format("realm: {0}", realmName))
 	}
 	if !errors.As(err, &appErrs.ObjectNotFoundError{}) {
 		return err
@@ -202,7 +203,7 @@ func (mn *RedisDataManager) updateUserFederationConfigObject(realmName string, u
 		}
 	}
 
-	return appErrs.NewObjectNotFoundError(RealmUserFederationConfig, userFederationName, sf.Format("Realm: {0}", realmName))
+	return appErrs.NewObjectNotFoundError(string(RealmUserFederationConfig), userFederationName, sf.Format("Realm: {0}", realmName))
 }
 
 // deleteUserFederationConfigObject - deleting a data.UserFederationServiceConfig

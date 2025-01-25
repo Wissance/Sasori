@@ -30,11 +30,11 @@ type objectType string
 
 const (
 	Realm                     objectType = "realm"
-	RealmClients                         = "realm clients"
-	RealmUsers                           = "realm users"
-	RealmUserFederationConfig            = " realm user federation config"
-	Client                               = "client"
-	User                                 = "user"
+	RealmClients              objectType = "realm clients"
+	RealmUsers                objectType = "realm users"
+	RealmUserFederationConfig objectType = " realm user federation config"
+	Client                    objectType = "client"
+	User                      objectType = "user"
 )
 
 const defaultNamespace = "fe"
@@ -253,7 +253,7 @@ func getMultipleRedisObjects[T any](redisClient *redis.Client, ctx context.Conte
 ) ([]T, error) {
 	redisCmd := redisClient.MGet(ctx, objKey...)
 	if redisCmd.Err() != nil {
-		//todo(UMV): print when this will be done https://github.com/Wissance/stringFormatter/issues/14
+		// todo(UMV): print when this will be done https://github.com/Wissance/stringFormatter/issues/14
 		logger.Warn(sf.Format("An error occurred during fetching {0}: from Redis server", objName))
 		return nil, redisCmd.Err()
 	}
@@ -353,7 +353,8 @@ func getObjectsListOfNonSlicesItemsFromRedis[T any](redisClient *redis.Client, c
 }
 
 func updateObjectListItemInRedis[T any](redisClient *redis.Client, ctx context.Context, logger *logging.AppLogger,
-	objName objectType, objKey string, index int64, item T) error {
+	objName objectType, objKey string, index int64, item T,
+) error {
 	redisCmd := redisClient.LSet(ctx, objKey, index, item)
 	if redisCmd.Err() != nil {
 		logger.Warn(sf.Format("An error occurred during setting (update) item in LIST with key: \"{0}\" of type \"{1}\" with index {2}, error: {3}",

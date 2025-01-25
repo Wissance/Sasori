@@ -119,6 +119,7 @@ func checkRealm(t *testing.T, expected *data.Realm, actual *data.Realm) {
 	assert.Equal(t, expected.RefreshTokenExpiration, actual.RefreshTokenExpiration)
 }
 
+// nolint unused
 func checkClients(t *testing.T, expected *[]data.Client, actual *[]data.Client) {
 	assert.Equal(t, len(*expected), len(*actual))
 	for _, e := range *expected {
@@ -142,6 +143,7 @@ func checkClient(t *testing.T, expected *data.Client, actual *data.Client) {
 	assert.Equal(t, expected.Auth.Value, actual.Auth.Value)
 }
 
+// nolint unused
 func checkUsers(t *testing.T, expected *[]data.User, actual *[]data.User) {
 	assert.Equal(t, len(*expected), len(*actual))
 	for _, e := range *expected {

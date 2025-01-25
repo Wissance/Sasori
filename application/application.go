@@ -1,14 +1,15 @@
 package application
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/wissance/Ferrum/globals"
@@ -43,6 +44,8 @@ type Application struct {
 	webApiContext      *rest.WebApiContext
 	logger             *logging.AppLogger
 	httpHandler        *http.Handler
+	httpServer         *http.Server
+	shutdownTimeout    time.Duration
 }
 
 // CreateAppWithConfigs creates but not Init new Application as AppRunner
@@ -82,13 +85,10 @@ func CreateAppWithData(appConfig *config.AppConfig, serverData *data.ServerData,
  * Return start result (true if Start was successful) and error (nil if start was successful)
  */
 func (app *Application) Start() (bool, error) {
-	var err error
-	go func() {
-		err = app.startWebService()
-		if err != nil {
-			app.logger.Error(stringFormatter.Format("An error occurred during API Service Start"))
-		}
-	}()
+	err := app.startWebService()
+	if err != nil {
+		app.logger.Error(stringFormatter.Format("An error occurred during API Service Start"))
+	}
 	return err == nil, err
 }
 
@@ -150,6 +150,9 @@ func (app *Application) Init() (bool, error) {
 		app.logger.Error(stringFormatter.Format("An error occurred during rest api init: {0}", err.Error()))
 		return false, err
 	}
+
+	app.httpServer = &http.Server{Handler: *app.httpHandler}
+	app.shutdownTimeout = 5 * time.Second
 	return true, nil
 }
 
@@ -158,7 +161,13 @@ func (app *Application) Init() (bool, error) {
  * Parameters : no
  * Returns result of app stop and error
  */
-func (app *Application) Stop() (bool, error) {
+func (app *Application) Stop(ctx context.Context) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, app.shutdownTimeout)
+	defer cancel()
+	err := app.httpServer.Shutdown(ctx)
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
@@ -287,21 +296,32 @@ func (app *Application) startWebService() error {
 	var err error
 	addressTemplate := "{0}:{1}"
 	address := stringFormatter.Format(addressTemplate, app.appConfig.ServerCfg.Address, app.appConfig.ServerCfg.Port)
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		return err
+	}
+	app.httpServer.Addr = address
 	switch app.appConfig.ServerCfg.Schema { //nolint:exhaustive
 	case config.HTTP:
 		app.logger.Info(stringFormatter.Format("Starting \"HTTP\" WEB API Service on address: \"{0}\"", address))
-		err = http.ListenAndServe(address, *app.httpHandler)
-		if err != nil {
-			app.logger.Error(stringFormatter.Format("An error occurred during attempt to start \"HTTP\" WEB API Service: {0}", err.Error()))
-		}
+		go func() {
+			err = app.httpServer.Serve(listener)
+			if err != nil {
+				app.logger.Error(
+					stringFormatter.Format("An error occurred during attempt to start \"HTTP\" WEB API Service: {0}", err.Error()))
+			}
+		}()
 	case config.HTTPS:
 		app.logger.Info(stringFormatter.Format("Starting \"HTTPS\" REST API Service on address: \"{0}\"", address))
 		cert := app.appConfig.ServerCfg.Security.CertificateFile
 		key := app.appConfig.ServerCfg.Security.KeyFile
-		err = http.ListenAndServeTLS(address, cert, key, *app.httpHandler)
-		if err != nil {
-			app.logger.Error(stringFormatter.Format("An error occurred during attempt tp start \"HTTPS\" REST API Service: {0}", err.Error()))
-		}
+		go func() {
+			err = app.httpServer.ServeTLS(listener, cert, key)
+			if err != nil {
+				app.logger.Error(
+					stringFormatter.Format("An error occurred during attempt tp start \"HTTPS\" REST API Service: {0}", err.Error()))
+			}
+		}()
 	}
 	return err
 }
@@ -313,7 +333,7 @@ func (app *Application) readKey() []byte {
 		return nil
 	}
 
-	fileData, err := ioutil.ReadFile(absPath)
+	fileData, err := os.ReadFile(absPath)
 	if err != nil {
 		app.logger.Error(stringFormatter.Format("An error occurred during key file reading: {0}", err.Error()))
 		return nil
@@ -352,7 +372,7 @@ func (app *Application) getSwaggerAddress() string {
 	if len(envAddr) > 0 {
 		return envAddr
 	}
-	
+
 	// 2. Get Address from Network Interfaces
 	addresses, err := net.InterfaceAddrs()
 	if err != nil {
