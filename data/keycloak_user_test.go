@@ -34,7 +34,6 @@ func TestInitUserWithJsonAndCheck(t *testing.T) {
 
 	for _, tCase := range testCases {
 		t.Run(tCase.name, func(t *testing.T) {
-			t.Parallel()
 			jsonStr := sf.Format(tCase.userTemplate, tCase.userName, tCase.preferredUsername)
 			var rawUserData interface{}
 			err := json.Unmarshal([]byte(jsonStr), &rawUserData)

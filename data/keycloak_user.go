@@ -83,6 +83,7 @@ func (user *KeyCloakUser) SetPassword(password string, encoder *encoding.Passwor
 func (user *KeyCloakUser) GetId() uuid.UUID {
 	idStrValue := getPathStringValue[string](user.rawData, "info.sub")
 	id, err := uuid.Parse(idStrValue)
+	// nolint staticcheck
 	if err != nil {
 		// todo(UMV): think what to do here, return error!
 	}
@@ -132,11 +133,12 @@ func (user *KeyCloakUser) GetFederationId() string {
 func getPathStringValue[T any](rawData interface{}, path string) T {
 	var result T
 	mask, err := jp.ParseString(path)
+	// nolint staticcheck
 	if err != nil {
 		// todo(UMV): log and think what to do ...
 	}
 	res := mask.Get(rawData)
-	if res != nil && len(res) == 1 {
+	if len(res) == 1 {
 		result = res[0].(T)
 	}
 	return result

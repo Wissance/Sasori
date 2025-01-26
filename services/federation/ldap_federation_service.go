@@ -2,6 +2,7 @@ package federation
 
 import (
 	"errors"
+
 	"github.com/go-ldap/ldap/v3"
 	"github.com/wissance/Ferrum/data"
 	appErrs "github.com/wissance/Ferrum/errors"
@@ -62,7 +63,7 @@ func (s *LdapUserFederation) GetUser(userName string, mask string) (data.User, e
 	}
 
 	if result != nil {
-		if result.Entries == nil || len(result.Entries) == 0 {
+		if len(result.Entries) == 0 {
 			return nil, appErrs.NewFederatedUserNotFound(string(s.config.Type), s.config.Name, s.config.Url, userName)
 		}
 
@@ -72,7 +73,7 @@ func (s *LdapUserFederation) GetUser(userName string, mask string) (data.User, e
 	}
 
 	// todo(UMV): convert []Attributes to Json and pass
-	//result.Entries[0].Attributes[0].Name
+	// result.Entries[0].Attributes[0].Name
 
 	return nil, nil
 }
@@ -86,5 +87,4 @@ func (s *LdapUserFederation) Authenticate(userName string, password string) (boo
 }
 
 func (s *LdapUserFederation) Init() {
-
 }

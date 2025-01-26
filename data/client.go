@@ -9,7 +9,7 @@ type ClientType string
 
 const (
 	Public       ClientType = "public"
-	Confidential            = "confidential"
+	Confidential ClientType = "confidential"
 )
 
 // Client is a realm client, represents an application nad set of rules for interacting with Authorization server

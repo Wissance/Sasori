@@ -1,14 +1,13 @@
 package config
 
-//Composing structs for unmarshalling. Writer is lumberjack's setup struct.
-//It's annotated for JSON out-of-the-box.
-//Logrus is for logging level and log output settings.
-
+// Composing structs for unmarshalling. Writer is lumberjack's setup struct.
+// It's annotated for JSON out-of-the-box.
+// Logrus is for logging level and log output settings.
 type AppenderType string
 
 const (
 	RollingFile AppenderType = "rolling_file"
-	Console                  = "console"
+	Console     AppenderType = "console"
 )
 
 /*type GlobalConfig struct {
