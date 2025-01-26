@@ -2,8 +2,10 @@ package config
 
 import (
 	"errors"
-	sf "github.com/wissance/stringFormatter"
 	"os"
+	"time"
+
+	sf "github.com/wissance/stringFormatter"
 )
 
 type Schema string
@@ -19,11 +21,12 @@ type SecurityConfig struct {
 }
 
 type ServerConfig struct {
-	Schema     Schema          `json:"schema" example:"http or https"`
-	Address    string          `json:"address" example:"127.0.0.1 or mydomain.com"`
-	Port       int             `json:"port" example:"8080"`
-	Security   *SecurityConfig `json:"security"`
-	SecretFile string          `json:"secret_file" example:"./keyfile"`
+	Schema          Schema          `json:"schema" example:"http or https"`
+	Address         string          `json:"address" example:"127.0.0.1 or mydomain.com"`
+	Port            int             `json:"port" example:"8080"`
+	Security        *SecurityConfig `json:"security"`
+	SecretFile      string          `json:"secret_file" example:"./keyfile"`
+	ShutdownTimeout time.Duration   `json:"shutdown_timeout"`
 }
 
 func (cfg *ServerConfig) Validate() error {

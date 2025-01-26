@@ -89,7 +89,7 @@ func (wCtx *WebApiContext) IssueNewToken(respWriter http.ResponseWriter, request
 				issueTokens := false
 				// 0. Check whether we deal with issuing a new token or refresh previous one
 				isRefresh := isTokenRefreshRequest(&tokenGenerationData)
-				if isRefresh == true {
+				if isRefresh {
 					// 1-2. Validate refresh token and check is it fresh enough
 					session := (*wCtx.Security).GetSessionByRefreshToken(realm, &tokenGenerationData.RefreshToken)
 					if session == nil {
@@ -192,7 +192,7 @@ func (wCtx *WebApiContext) GetUserInfo(respWriter http.ResponseWriter, request *
 	realm := vars[globals.RealmPathVar]
 	if !Validate(realm) {
 		wCtx.Logger.Debug(sf.Format("Get UserInfo: is invalid realmName: '{0}'", realm))
-		status := http.StatusBadRequest
+		status = http.StatusBadRequest
 		result := dto.ErrorDetails{Msg: sf.Format(errors.InvalidRealm, realm)}
 		afterHandle(&respWriter, status, &result)
 		return
@@ -240,7 +240,6 @@ func (wCtx *WebApiContext) GetUserInfo(respWriter http.ResponseWriter, request *
 					result = dto.ErrorDetails{Msg: errors.InvalidTokenMsg, Description: errors.InvalidTokenDesc}
 				} else {
 					user, _ := (*wCtx.DataProvider).GetUserById(realmPtr.Name, session.UserId)
-					status = http.StatusOK
 					if user != nil {
 						result = user.GetUserInfo()
 					}
@@ -434,6 +433,7 @@ func isTokenRefreshRequest(tokenIssueData *dto.TokenGenerationData) bool {
 }
 
 // reserved for future use
+// nolint unused
 func getUserIP(r *http.Request) string {
 	IPAddress := r.Header.Get("X-Real-Ip")
 	if IPAddress == "" {

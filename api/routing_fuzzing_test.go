@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"io"
@@ -74,9 +75,9 @@ func FuzzTestIssueNewTokenWithWrongClientId(f *testing.F) {
 	f.Add("")
 	f.Add("0")
 	f.Add("00")
+
 	f.Fuzz(func(t *testing.T, clientId string) {
 		initApp(t)
-		t.Parallel()
 		issueNewToken(t, clientId, testClient1Secret, "vano", "1234567890", 400)
 	})
 }
@@ -85,9 +86,9 @@ func FuzzTestIssueNewTokenWithWrongClientSecret(f *testing.F) {
 	f.Add("\x00fb6Z4RsOadVycQoeQiN57xpu8w8wplYz")
 	f.Add("fb6Z4RsOadVycQoeQiN57xpu8w8wplYz_!")
 	f.Add("")
+
 	f.Fuzz(func(t *testing.T, clientSecret string) {
 		initApp(t)
-		t.Parallel()
 		issueNewToken(t, testClient1, clientSecret, "vano", "1234567890", 400)
 	})
 }
@@ -96,9 +97,9 @@ func FuzzTestIssueNewTokenWithWrongUsername(f *testing.F) {
 	f.Add("\x00vano")
 	f.Add("!")
 	f.Add("")
+
 	f.Fuzz(func(t *testing.T, username string) {
 		initApp(t)
-		t.Parallel()
 		issueNewToken(t, testClient1, testClient1Secret, username, "1234567890", 401)
 	})
 }
@@ -107,9 +108,9 @@ func FuzzTestIssueNewTokenWithWrongPassword(f *testing.F) {
 	f.Add("\x001234567890")
 	f.Add("!")
 	f.Add("")
+
 	f.Fuzz(func(t *testing.T, password string) {
 		initApp(t)
-		t.Parallel()
 		issueNewToken(t, testClient1, testClient1Secret, "vano", password, 401)
 	})
 }
@@ -118,9 +119,9 @@ func FuzzTestIntrospectTokenWithWrongClientId(f *testing.F) {
 	f.Add("\x001234567890")
 	f.Add("!")
 	f.Add("")
+
 	f.Fuzz(func(t *testing.T, clientId string) {
 		initApp(t)
-		t.Parallel()
 		token := getToken(t)
 		checkIntrospectToken(t, token.AccessToken, clientId, testClient1Secret, testRealm1, 401)
 	})
@@ -130,9 +131,9 @@ func FuzzTestIntrospectTokenWithWrongSecret(f *testing.F) {
 	f.Add("\x001234567890")
 	f.Add("!")
 	f.Add("")
+
 	f.Fuzz(func(t *testing.T, clientSecret string) {
 		initApp(t)
-		t.Parallel()
 		token := getToken(t)
 		checkIntrospectToken(t, token.AccessToken, testClient1, clientSecret, testRealm1, 401)
 	})
@@ -143,9 +144,9 @@ func FuzzTestIntrospectTokenWithWrongToken(f *testing.F) {
 	f.Add("\x001234567890")
 	f.Add("!")
 	f.Add("")
+
 	f.Fuzz(func(t *testing.T, token string) {
 		initApp(t)
-		t.Parallel()
 		checkIntrospectToken(t, token, testClient1, testClient1Secret, testRealm1, 401)
 	})
 }
@@ -156,9 +157,9 @@ func FuzzTestRefreshTokenWithWrongToken(f *testing.F) {
 	f.Add("")
 	f.Add("0")
 	f.Add("00")
+
 	f.Fuzz(func(t *testing.T, token string) {
 		initApp(t)
-		t.Parallel()
 		refreshToken(t, testClient1, testClient1Secret, token, 401)
 	})
 }
@@ -168,14 +169,13 @@ func FuzzTestGetUserInfoWithWrongToken(f *testing.F) {
 	f.Add("00")
 	f.Add("  ")
 	f.Add("\n\n")
+
 	f.Fuzz(func(t *testing.T, token string) {
+		initApp(t)
 		expectedStatusCode := 401
 		if !isTokenValid(t, token) || len(token) == 0 {
 			expectedStatusCode = 400
 		}
-		initApp(t)
-		t.Parallel()
-		t.Helper()
 		userInfoUrlTemplate := "{0}/auth/realms/{1}/protocol/openid-connect/userinfo/"
 		doRequest(
 			t, "GET", userInfoUrlTemplate, testRealm1, nil,
@@ -188,7 +188,8 @@ func initApp(t *testing.T) application.AppRunner {
 	t.Helper()
 	app := application.CreateAppWithData(&httpAppConfig, &testServerData, testKey, true)
 	t.Cleanup(func() {
-		app.Stop()
+		_, err := app.Stop(context.Background())
+		require.NoError(t, err)
 	})
 	res, err := app.Init()
 	assert.True(t, res)
@@ -229,12 +230,11 @@ func setGetTokenFormData(clientId, clientSecret, grantType, username, password, 
 
 func doPostForm(t *testing.T, reqUrl string, urlData url.Values, expectedStatus int) *http.Response {
 	t.Helper()
-	response, _ := http.PostForm(reqUrl, urlData)
+	response, err := http.PostForm(reqUrl, urlData)
+	require.NoError(t, err)
 	if response != nil {
 		require.Equal(t, response.StatusCode, expectedStatus)
 	}
-	// todo(yurishang): sometimes there is an Net Op error when running a fuzz test
-	// in line 'response, _ := http.PostForm(reqUrl, urlData)'
 	return response
 }
 
@@ -309,6 +309,7 @@ func getDataFromResponse[TR dto.Token | dto.ErrorDetails](t *testing.T, response
 func isTokenValid(t *testing.T, token string) bool {
 	// Checking that the token doesn't contains space characters only.
 	// If yes, then the token is not valid - the expected status code is 400. Otherwise - 401.
+	t.Helper()
 	pattern := "[ \n\t]+"
 	match, _ := regexp.MatchString(pattern, token)
 	return !match

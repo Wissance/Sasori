@@ -54,7 +54,7 @@ func TestCreateRealmSuccessfully(t *testing.T) {
 						Value: uuid.New().String(),
 					},
 				}
-				realm.Clients = append([]data.Client{client})
+				realm.Clients = append(realm.Clients, client)
 			}
 
 			for _, u := range tCase.users {
@@ -62,7 +62,7 @@ func TestCreateRealmSuccessfully(t *testing.T) {
 				var rawUser interface{}
 				err := json.Unmarshal([]byte(userJson), &rawUser)
 				assert.NoError(t, err)
-				realm.Users = append([]interface{}{rawUser})
+				realm.Users = append(realm.Users, rawUser)
 			}
 
 			err := manager.CreateRealm(realm)
@@ -125,8 +125,10 @@ func TestCreateRealmWithFederationSuccessfully(t *testing.T) {
 			err := manager.CreateRealm(realm)
 			assert.NoError(t, err)
 			r, err := manager.GetRealm(realm.Name)
+			assert.NoError(t, err)
 			checkRealm(t, &realm, r)
 			err = manager.DeleteRealm(realm.Name)
+			assert.NoError(t, err)
 			userFederationConfigs, err := manager.GetUserFederationConfigs(realm.Name)
 			assert.ErrorIs(t, err, appErrs.ErrZeroLength)
 			assert.Nil(t, userFederationConfigs)
@@ -179,13 +181,13 @@ func TestUpdateRealmSuccessfully(t *testing.T) {
 			Value: uuid.New().String(),
 		},
 	}
-	realm.Clients = append([]data.Client{client})
+	realm.Clients = append(realm.Clients, client)
 
 	userJson := sf.Format(`{"info":{"preferred_username":"{0}"}}`, "new_app_user")
 	var rawUser interface{}
 	err = json.Unmarshal([]byte(userJson), &rawUser)
 	assert.NoError(t, err)
-	realm.Users = append([]interface{}{rawUser})
+	realm.Users = append(realm.Users, rawUser)
 
 	err = manager.UpdateRealm(prevRealmName, realm)
 	assert.NoError(t, err)
@@ -855,6 +857,7 @@ func TestCreateUserFederationServiceConfigSuccessfully(t *testing.T) {
 			err := manager.CreateRealm(realm)
 			assert.NoError(t, err)
 			r, err := manager.GetRealm(realm.Name)
+			assert.NoError(t, err)
 			checkRealm(t, &realm, r)
 
 			// Creation of sample UserFederationService
@@ -901,6 +904,7 @@ func TestUpdateUserFederationServiceConfigSuccessfully(t *testing.T) {
 			err := manager.CreateRealm(realm)
 			assert.NoError(t, err)
 			r, err := manager.GetRealm(realm.Name)
+			assert.NoError(t, err)
 			checkRealm(t, &realm, r)
 
 			// Creation of sample UserFederationService
@@ -954,6 +958,7 @@ func TestDeleteUserFederationServiceConfigSuccessfully(t *testing.T) {
 			err := manager.CreateRealm(realm)
 			assert.NoError(t, err)
 			r, err := manager.GetRealm(realm.Name)
+			assert.NoError(t, err)
 			checkRealm(t, &realm, r)
 
 			// Creation of sample UserFederationService

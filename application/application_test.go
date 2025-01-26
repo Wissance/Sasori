@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
@@ -91,6 +92,7 @@ func TestApplicationOnHttps(t *testing.T) {
 }
 
 func testRunCommonTestCycleImpl(t *testing.T, appConfig *config.AppConfig, baseUrl string) {
+	ctx := context.Background()
 	app := CreateAppWithData(appConfig, &testServerData, testKey, true)
 	res, err := app.Init()
 	assert.True(t, res)
@@ -164,7 +166,7 @@ func testRunCommonTestCycleImpl(t *testing.T, appConfig *config.AppConfig, baseU
 	response = refreshToken(t, baseUrl, realm, testClient1, testClient1Secret, token.RefreshToken)
 	assert.Equal(t, response.Status, "200 OK")
 
-	res, err = app.Stop()
+	res, err = app.Stop(ctx)
 	assert.True(t, res)
 	assert.Nil(t, err)
 }

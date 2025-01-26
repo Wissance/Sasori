@@ -110,10 +110,10 @@ func main() {
 		case operations.ClientResource:
 			var clientNew data.Client
 			if unmarshalErr := json.Unmarshal(value, &clientNew); unmarshalErr != nil {
-				log.Fatalf(sf.Format("json.Unmarshal failed: {0}", unmarshalErr.Error()))
+				log.Fatal(sf.Format("json.Unmarshal failed: {0}", unmarshalErr.Error()))
 			}
 			if createErr := manager.CreateClient(params, clientNew); createErr != nil {
-				log.Fatalf(sf.Format("CreateClient failed: {0}", createErr.Error()))
+				log.Fatal(sf.Format("CreateClient failed: {0}", createErr.Error()))
 			}
 			log.Print(sf.Format("Client: \"{0}\" successfully created", clientNew.Name))
 

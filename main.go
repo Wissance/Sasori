@@ -6,6 +6,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -18,8 +19,10 @@ import (
 
 const defaultConfig = "./config.json"
 
-var configFile = flag.String("config", defaultConfig, "--config ./config_w_redis.json")
-var devMode = flag.Bool("devmode", false, "-devmode")
+var (
+	configFile = flag.String("config", defaultConfig, "--config ./config_w_redis.json")
+	devMode    = flag.Bool("devmode", false, "-devmode")
+)
 
 // main is an authorization server entry point is starts and stops by signal Application
 /* Ferrum requires config to run via cmd line, if no config was provided defaultConfig is using
@@ -34,6 +37,8 @@ func main() {
 	osSignal := make(chan os.Signal, 1)
 	done := make(chan bool, 1)
 	signal.Notify(osSignal, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+
+	ctx := context.Background()
 
 	app := application.CreateAppWithConfigs(*configFile, *devMode)
 	_, initErr := app.Init()
@@ -62,7 +67,7 @@ func main() {
 	// server was started in separate goroutine, main thread is waiting for signal to stop
 	<-done
 
-	res, err = app.Stop()
+	res, err = app.Stop(ctx)
 	if !res {
 		msg := stringFormatter.Format("An error occurred during stopping application, error is: {0}", err.Error())
 		fmt.Println(msg)
